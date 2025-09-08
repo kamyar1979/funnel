@@ -49,12 +49,7 @@ class FilterParser(QueryGenerator):
                 | pp.QuotedString('"', unquoteResults=False, escChar="\\")
         )
         date_value = pp.Regex(r"\d{4}-\d{1,2}-\d{1,2}")
-        collection_item = identifier | str_value
-        collection_value = (
-                pp.Suppress("[")
-                + pp.delimitedList(collection_item)
-                + pp.Suppress("]")
-        )
+        collection_value = pp.Suppress("[") + pp.delimitedList(identifier | str_value) + pp.Suppress("]")
         l_par = pp.Suppress("(")
         r_par = pp.Suppress(")")
         function_call = pp.Forward()
@@ -107,4 +102,3 @@ class FilterParser(QueryGenerator):
     def create_filter(self, filter_string: str):
         parsed = self.filter_expression.parseString(filter_string)
         return self.parse_single_expression(parsed)
-
