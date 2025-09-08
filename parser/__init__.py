@@ -45,24 +45,22 @@ class FilterParser(QueryGenerator):
         number = pp.Regex(r"[\d\.]+")
         identifier = pp.Regex(r"[a-z][\w\.]*")
         str_value = (
-                pp.QuotedString("'", unquoteResults=False, escChar="\\") |
-                pp.QuotedString('"', unquoteResults=False, escChar="\\")
+                pp.QuotedString("'", unquoteResults=False, escChar="\\")
+                | pp.QuotedString('"', unquoteResults=False, escChar="\\")
         )
         date_value = pp.Regex(r"\d{4}-\d{1,2}-\d{1,2}")
+        collection_item = identifier | str_value
+        collection_value = (
+                pp.Suppress("[")
+                + pp.delimitedList(collection_item)
+                + pp.Suppress("]")
+        )
         l_par = pp.Suppress("(")
         r_par = pp.Suppress(")")
         function_call = pp.Forward()
-        arg = function_call | identifier | date_value | number | str_value
-        collection_item = function_call | identifier | date_value | number | str_value
-        collection_value = (
-                pp.Suppress("[") +
-                pp.delimitedList(identifier | str_value, combine=False) +
-                pp.Suppress("]")
-        )
-        collection_value.setParseAction(lambda t: list(t))
-        function_call <<= pp.Group(identifier + l_par + pp.Optional(pp.delimitedList(arg)) + r_par)
-        arg = function_call | collection_value | identifier | date_value | number | str_value
-        param = function_call | collection_value | arg
+        arg = function_call | identifier | date_value | number | collection_value | str_value
+        function_call = pp.Group(identifier + l_par + pp.Optional(pp.delimitedList(arg)) + r_par)
+        param = function_call | arg
         condition = pp.Group(param + operator_ + param)
 
         # Define a full filter expression supporting 'and'/'or'
