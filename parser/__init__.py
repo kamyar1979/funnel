@@ -44,7 +44,10 @@ class FilterParser(QueryGenerator):
         operator_ = pp.Regex("|".join(self.op_map.keys())).setName("operator")
         number = pp.Regex(r"[\d\.]+")
         identifier = pp.Regex(r"[a-z][\w\.]*")
-        str_value = pp.QuotedString("'", unquoteResults=False, escChar="\\")
+        str_value = (
+                pp.QuotedString("'", unquoteResults=False, escChar="\\") |
+                pp.QuotedString('"', unquoteResults=False, escChar="\\")
+        )
         date_value = pp.Regex(r"\d{4}-\d{1,2}-\d{1,2}")
         l_par = pp.Suppress("(")
         r_par = pp.Suppress(")")
@@ -52,9 +55,9 @@ class FilterParser(QueryGenerator):
         arg = function_call | identifier | date_value | number | str_value
         collection_item = function_call | identifier | date_value | number | str_value
         collection_value = (
-                pp.Suppress("[")
-                + pp.Optional(pp.delimitedList(collection_item), default=[])
-                + pp.Suppress("]")
+                pp.Suppress("[") +
+                pp.delimitedList(identifier | str_value, combine=False) +
+                pp.Suppress("]")
         )
         collection_value.setParseAction(lambda t: list(t))
         function_call <<= pp.Group(identifier + l_par + pp.Optional(pp.delimitedList(arg)) + r_par)
