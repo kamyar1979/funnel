@@ -7,6 +7,7 @@ import motor.motor_asyncio
 import asyncio
 from actions import Action
 from parser.sqlalchemy import SqlAlchemyFilterParser
+from parser.py_ast_dict import DictASTFilterParser
 
 # Connect to MongoDB
 client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://localhost:27017")
@@ -39,16 +40,26 @@ async def fetch_records():
             print(record.name)
 
 def fetch_items():
-    parser = DictFilterParser()
-
     items = [
-        {"field1": 2},
-        {"field1": 4},
-        {"field1": 18},
-        {"field1": 20},
+        {"field1": 2, "name": "alpha", "tags": ["x", "y"]},
+        {"field1": 4, "name": "beta", "tags": []},
+        {"field1": 18, "name": "alphabet", "tags": ["z"]},
+        {"field1": 20, "name": "gamma", "tags": ["y"]},
+        {"field1": 30, "name": "delta", "nested": {"value": 10}},
     ]
 
-    print(parser.apply_filter("field1 gt 5", items))
+    parser = DictASTFilterParser()
+
+    # basic numeric
+    print(parser.apply_filter("field1 gt 5 AND field1 lt 25", items))
+    # string funcs/operators
+    print(parser.apply_filter("name startswith 'alp' OR name like 'mm'", items))
+    # membership: value in list literal
+    print(parser.apply_filter("name in ['alpha','delta']", items))
+    # sequences: has / contains
+    print(parser.apply_filter("tags has 'y'", items))
+    # dotted paths
+    print(parser.apply_filter("nested.value eq 10", items))
+
 
 fetch_items()
-
