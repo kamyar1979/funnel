@@ -61,5 +61,9 @@ def fetch_items():
     # dotted paths
     print(parser.apply_filter("nested.value eq 10", items))
 
+async def main():
+    await fetch_documents()
+    await fetch_records()
+    fetch_items()
 
-fetch_items()
+asyncio.run(main())
