@@ -18,9 +18,10 @@ def _get_path(row: Any, path: str, *, allow_private: bool = False) -> Any:
         if isinstance(cur, (list, tuple)):
             try:
                 idx = int(part)
-            except ValueError:
+                cur = cur[idx] if 0 <= idx < len(cur) else None
+                continue
+            except (ValueError, IndexError):
                 return None
-            return cur[idx] if 0 <= idx < len(cur) else None
         if not allow_private and part.startswith("_"):
             return None
         cur = getattr(cur, part, None)
@@ -54,7 +55,7 @@ _length = lambda x: (len(x) if hasattr(x, "__len__") else 0)
 _indexOf = lambda s, sub: _to_str(s).find(_to_str(sub))
 _replace = lambda s, old, new: _to_str(s).replace(_to_str(old), _to_str(new))
 _substring = lambda s, start, length=None: (
-    _to_str(s)[start:] if length is None else _to_str(s)[start : start + length]
+    _to_str(s)[start:] if length is None else _to_str(s)[start: start + length]
 )
 _toLower = lambda s: _to_str(s).lower()
 _toUpper = lambda s: _to_str(s).upper()
