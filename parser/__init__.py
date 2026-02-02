@@ -1,6 +1,7 @@
 import re
 from datetime import datetime, time
-from typing import Any, Callable, Protocol, Sequence, TypeVar
+from typing import Any, Callable, Protocol, Sequence
+
 
 import pyparsing as pp
 
@@ -19,11 +20,11 @@ class QueryGenerator(Protocol):
 class FilterParser(QueryGenerator):
 
     def __init__(
-        self,
-        *,
-        ident_parsers: list[tuple[str, IDENTIFIER_PARSER_FUNC]] | None = None,
-        op_map: dict[str, Callable[..., Any]],
-        func_map: dict[str, Callable[..., Any]],
+            self,
+            *,
+            ident_parsers: list[tuple[str, IDENTIFIER_PARSER_FUNC]] | None = None,
+            op_map: dict[str, Callable[..., Any]],
+            func_map: dict[str, Callable[..., Any]],
     ):
 
         self.parsers = ident_parsers or [
@@ -40,13 +41,17 @@ class FilterParser(QueryGenerator):
 
         # Define basic elements
         operator_ = pp.Regex("|".join(self.op_map.keys())).setName("operator")
-        number = pp.Regex(r"[\d\.]+")
+        number = pp.Regex(r"-?[\d\.]+")
         identifier = pp.Regex(r"[a-z][\w\.]*")
         str_value = pp.QuotedString("'", unquoteResults=False, escChar="\\") | pp.QuotedString(
             '"', unquoteResults=False, escChar="\\"
         )
         date_value = pp.Regex(r"\d{4}-\d{1,2}-\d{1,2}")
-        collection_value = pp.Suppress("[") + pp.delimitedList(identifier | str_value) + pp.Suppress("]")
+        collection_value = (
+                pp.Suppress("[")
+                + pp.delimitedList(str_value | number | identifier)
+                + pp.Suppress("]")
+        ).setParseAction(lambda t: [t.asList()])
         l_par = pp.Suppress("(")
         r_par = pp.Suppress(")")
         function_call = pp.Forward()
@@ -64,13 +69,18 @@ class FilterParser(QueryGenerator):
             ],
         )
 
-    def parse_identifier(self, val: str | pp.ParseResults) -> Any:
+    def parse_identifier(self, val: str | pp.ParseResults | list) -> Any:
         if isinstance(val, str):
             for pattern, parser in self.parsers:
                 if re.match(pattern, val):
                     return parser(val)
             return self.get_column(val)
-        if isinstance(val, Sequence):
+
+        # Check if it's a list (collection literal)
+        if isinstance(val, list):
+            return [self.parse_identifier(i) for i in val]
+
+        if isinstance(val, (Sequence, pp.ParseResults)):
             if len(val) == 1:
                 return self.parse_identifier(val[0])
             else:
