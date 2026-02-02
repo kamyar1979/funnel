@@ -1,13 +1,12 @@
-from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
-from sqlalchemy import select
-
-from parser.dict_data import DictFilterParser
-from parser.mongodb import MongoDBFilterParser
-import motor.motor_asyncio
 import asyncio
+
+import motor.motor_asyncio
 from actions import Action
-from parser.sqlalchemy import SQLAlchemyFilterParser
+from parser.mongodb import MongoDBFilterParser
 from parser.py_ast_dict import DictASTFilterParser
+from parser.sqlalchemy import SQLAlchemyJsonFilterParser
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 
 # Connect to MongoDB
 client = motor.motor_asyncio.AsyncIOMotorClient("mongodb://localhost:27017")
@@ -30,7 +29,7 @@ async def fetch_documents():
 
 
 async def fetch_records():
-    parser = SQLAlchemyFilterParser(Action)
+    parser = SQLAlchemyJsonFilterParser(Action)
 
     async with session_maker() as session:
         query = await session.execute(parser.add_filter("type eq 'TRANSFER'", select(Action)))
@@ -40,26 +39,21 @@ async def fetch_records():
             print(record.name)
 
 def fetch_items():
-    items = [
-        {"field1": 2, "name": "alpha", "tags": ["x", "y"]},
-        {"field1": 4, "name": "beta", "tags": []},
-        {"field1": 18, "name": "alphabet", "tags": ["z"]},
-        {"field1": 20, "name": "gamma", "tags": ["y"]},
-        {"field1": 30, "name": "delta", "nested": {"value": 10}},
-    ]
+    from tests.mock_data import MOCK_ITEMS
+    items = MOCK_ITEMS
 
     parser = DictASTFilterParser()
 
     # basic numeric
-    print(parser.apply_filter("field1 gt 5 AND field1 lt 25", items))
+    print(parser.apply_filter("priority eq 1", items))
     # string funcs/operators
-    print(parser.apply_filter("name startswith 'alp' OR name like 'mm'", items))
+    print(parser.apply_filter("name startswith 'Proj' OR name like 'Integration'", items))
     # membership: value in list literal
-    print(parser.apply_filter("name in ['alpha','delta']", items))
+    print(parser.apply_filter("type in ['INTERNAL']", items))
     # sequences: has / contains
-    print(parser.apply_filter("tags has 'y'", items))
+    print(parser.apply_filter("tags has 'urgent'", items))
     # dotted paths
-    print(parser.apply_filter("nested.value eq 10", items))
+    print(parser.apply_filter("metadata.settings.notifications eq true", items))
 
 async def main():
     await fetch_documents()
