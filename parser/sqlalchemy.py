@@ -2,6 +2,7 @@ import functools
 import operator
 
 from sqlalchemy import Select, and_, func, not_, or_
+from sqlalchemy.dialects.postgresql import JSONB
 
 from . import FilterParser
 
@@ -66,3 +67,28 @@ class SQLAlchemyFilterParser[T](FilterParser):
 
     def add_filter(self, filter_string: str, query: Select) -> Select:
         return query.where(self.create_filter(filter_string))
+
+
+class SQLAlchemyJsonFilterParser[T](SQLAlchemyFilterParser[T]):
+    def get_column(self, column: str):
+        if "." not in column:
+            return super().get_column(column)
+
+        parts = column.split(".")
+        root_col_name = parts[0]
+        json_path = parts[1:]
+
+        col = getattr(self.model_type, root_col_name)
+
+        # Check if it's a JSON/JSONB column to apply JSON path indexing
+        if hasattr(col, "type") and isinstance(col.type, JSONB):
+            for part in json_path:
+                col = col[part]
+            # By default, SQLAlchemy JSON access returns a JSON element.
+            # For comparisons with strings/numbers, we might need it as_string() or casted.
+            # But usually, SQLAlchemy handles comparisons if it's JSONB.
+            return col.astext if hasattr(col, "astext") else col
+
+        # If not JSONB, maybe it's a relationship? 
+        # For now, we follow the user's request for JSON search.
+        return super().get_column(column)
