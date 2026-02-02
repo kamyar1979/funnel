@@ -1,7 +1,7 @@
 from . import FilterParser
 
 
-class MongoDbFilterParser(FilterParser):
+class MongoDBFilterParser(FilterParser):
 
     @staticmethod
     def mongo_unary(op: str):

@@ -2,11 +2,11 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker
 from sqlalchemy import select
 
 from parser.dict_data import DictFilterParser
-from parser.mongodb import MongoDbFilterParser
+from parser.mongodb import MongoDBFilterParser
 import motor.motor_asyncio
 import asyncio
 from actions import Action
-from parser.sqlalchemy import SqlAlchemyFilterParser
+from parser.sqlalchemy import SQLAlchemyFilterParser
 from parser.py_ast_dict import DictASTFilterParser
 
 # Connect to MongoDB
@@ -19,7 +19,7 @@ session_maker = async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def fetch_documents():
-    parser = MongoDbFilterParser()
+    parser = MongoDBFilterParser()
 
     query = parser.create_filter("duration gt 20 AND duration lt 100 AND call_id endswith '100'")
     print(query)
@@ -30,7 +30,7 @@ async def fetch_documents():
 
 
 async def fetch_records():
-    parser = SqlAlchemyFilterParser(Action)
+    parser = SQLAlchemyFilterParser(Action)
 
     async with session_maker() as session:
         query = await session.execute(parser.add_filter("type eq 'TRANSFER'", select(Action)))

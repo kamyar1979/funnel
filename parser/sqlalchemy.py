@@ -6,7 +6,7 @@ from sqlalchemy import Select, and_, func, not_, or_
 from . import FilterParser
 
 
-class SqlAlchemyFilterParser[T](FilterParser):
+class SQLAlchemyFilterParser[T](FilterParser):
 
     @staticmethod
     def date_part_func(part: str):
