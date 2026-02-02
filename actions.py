@@ -7,8 +7,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.mutable import MutableDict
 from sqlalchemy.orm import Mapped, mapped_column, relationship, DeclarativeBase
 
+
 class Base(DeclarativeBase):
     pass
+
 
 class AssistantAction(Base):
     __tablename__ = "assistant_actions"
