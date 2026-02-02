@@ -53,7 +53,9 @@ def _in_list(a: Any, seq: Sequence[Any]) -> bool:
 _length = lambda x: (len(x) if hasattr(x, "__len__") else 0)
 _indexOf = lambda s, sub: _to_str(s).find(_to_str(sub))
 _replace = lambda s, old, new: _to_str(s).replace(_to_str(old), _to_str(new))
-_substring = lambda s, start, length=None: (_to_str(s)[start:] if length is None else _to_str(s)[start:start + length])
+_substring = lambda s, start, length=None: (
+    _to_str(s)[start:] if length is None else _to_str(s)[start : start + length]
+)
 _toLower = lambda s: _to_str(s).lower()
 _toUpper = lambda s: _to_str(s).upper()
 _trim = lambda s: _to_str(s).strip()
@@ -111,20 +113,20 @@ def _nary_bool(combiner):
 class _PythonFilterParser(FilterParser):
     # base funcs
     func_map = {
-        'length': _lift1(_length),
-        'indexof': _lift2(_indexOf),
-        'replace': _lift3(_replace),
-        'substring': lambda s, start, length=None: (
+        "length": _lift1(_length),
+        "indexof": _lift2(_indexOf),
+        "replace": _lift3(_replace),
+        "substring": lambda s, start, length=None: (
             _lift3(_substring)(s, start, length)
-            if length is not None else
-            _lift2(lambda a, b: _substring(a, b, None))(s, start)
+            if length is not None
+            else _lift2(lambda a, b: _substring(a, b, None))(s, start)
         ),
-        'tolower': _lift1(_toLower),
-        'toupper': _lift1(_toUpper),
-        'trim': _lift1(_trim),
-        'round': _lift1(_round),
-        'floor': _lift1(_floor),
-        'ceiling': _lift1(_ceiling),
+        "tolower": _lift1(_toLower),
+        "toupper": _lift1(_toUpper),
+        "trim": _lift1(_trim),
+        "round": _lift1(_round),
+        "floor": _lift1(_floor),
+        "ceiling": _lift1(_ceiling),
     }
     # add datetime parts succinctly
     func_map |= {k: _lift1(_dt(k)) for k in "year month day hour minute second".split()}
@@ -135,33 +137,33 @@ class _PythonFilterParser(FilterParser):
 
     op_map = {
         # comparisons
-        'eq': _lift2(lambda a, b: a == b),
-        'ne': _lift2(lambda a, b: a != b),
-        'gt': _cmp(lambda a, b: a > b),
-        'lt': _cmp(lambda a, b: a < b),
-        'ge': _cmp(lambda a, b: a >= b),
-        'le': _cmp(lambda a, b: a <= b),
+        "eq": _lift2(lambda a, b: a == b),
+        "ne": _lift2(lambda a, b: a != b),
+        "gt": _cmp(lambda a, b: a > b),
+        "lt": _cmp(lambda a, b: a < b),
+        "ge": _cmp(lambda a, b: a >= b),
+        "le": _cmp(lambda a, b: a <= b),
         # arithmetic
-        'add': _lift2(lambda a, b: (a or 0) + (b or 0)),
-        'sub': _lift2(lambda a, b: (a or 0) - (b or 0)),
-        'mul': _lift2(lambda a, b: (a or 0) * (b or 0)),
-        'div': _lift2(lambda a, b: (a or 0) / (b or 1)),
-        'mod': _lift2(lambda a, b: (a or 0) % (b or 1)),
+        "add": _lift2(lambda a, b: (a or 0) + (b or 0)),
+        "sub": _lift2(lambda a, b: (a or 0) - (b or 0)),
+        "mul": _lift2(lambda a, b: (a or 0) * (b or 0)),
+        "div": _lift2(lambda a, b: (a or 0) / (b or 1)),
+        "mod": _lift2(lambda a, b: (a or 0) % (b or 1)),
         # logical (n-ary)
-        'AND': _nary_bool(all),
-        'OR': _nary_bool(any),
+        "AND": _nary_bool(all),
+        "OR": _nary_bool(any),
         # string-like
-        'like': _lift2(lambda a, b: _to_str(b) in _to_str(a)),
-        'endswith': _lift2(lambda a, b: _to_str(a).endswith(_to_str(b))),
-        'startswith': _lift2(lambda a, b: _to_str(a).startswith(_to_str(b))),
+        "like": _lift2(lambda a, b: _to_str(b) in _to_str(a)),
+        "endswith": _lift2(lambda a, b: _to_str(a).endswith(_to_str(b))),
+        "startswith": _lift2(lambda a, b: _to_str(a).startswith(_to_str(b))),
         # containment / membership
-        'contains': _lift2(_contains),
-        'lacks': _lift2(lambda a, b: not _contains(a, b)),
-        'in': _lift2(lambda a, b: _in_list(a, b if isinstance(b, (list, tuple, set)) else [b])),
+        "contains": _lift2(_contains),
+        "lacks": _lift2(lambda a, b: not _contains(a, b)),
+        "in": _lift2(lambda a, b: _in_list(a, b if isinstance(b, (list, tuple, set)) else [b])),
     }
     # aliases
-    op_map['has'] = op_map['contains']
-    op_map['hasNot'] = op_map['lacks']
+    op_map["has"] = op_map["contains"]
+    op_map["hasNot"] = op_map["lacks"]
 
     def __init__(self):
         super().__init__(op_map=self.op_map, func_map=self.func_map)

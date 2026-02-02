@@ -1,6 +1,6 @@
 import re
 from datetime import datetime, time
-from typing import Any, Sequence, Callable, Protocol, TypeVar
+from typing import Any, Callable, Protocol, Sequence, TypeVar
 
 import pyparsing as pp
 
@@ -18,24 +18,22 @@ class QueryGenerator(Protocol):
 
 class FilterParser(QueryGenerator):
 
-    def __init__(self, *,
-                 ident_parsers: list[tuple[str, IDENTIFIER_PARSER_FUNC]] | None = None,
-                 op_map: dict[str, Callable[..., Any]],
-                 func_map: dict[str, Callable[..., Any]]):
+    def __init__(
+        self,
+        *,
+        ident_parsers: list[tuple[str, IDENTIFIER_PARSER_FUNC]] | None = None,
+        op_map: dict[str, Callable[..., Any]],
+        func_map: dict[str, Callable[..., Any]],
+    ):
 
         self.parsers = ident_parsers or [
-            (r"^'?\d{2,4}-\d{1,2}-\d{1,2}'?$",
-             lambda s: datetime.strptime(s.strip("'"), "%Y-%m-%d")),
-            (r"^'?\d{1,2}:\d{1,2}(:\d{1,2})?'?",
-             lambda s: time.fromisoformat(s.strip("'"))),
-            (r"^\d+$",
-             lambda s: int(s.strip("'"))),
-            (r"^\d+\.\d+$",
-             lambda s: float(s.strip("'"))),
-            (r"^'.+'$",
-             lambda s: s.strip("'")),
-            ("true|false",
-             lambda s: True if s.lower() == "true" else False),
+            (r"^'?\d{2,4}-\d{1,2}-\d{1,2}'?$", lambda s: datetime.strptime(s.strip("'"), "%Y-%m-%d")),
+            (r"^'?\d{1,2}:\d{1,2}(:\d{1,2})?'?", lambda s: time.fromisoformat(s.strip("'"))),
+            (r"^\d+$", lambda s: int(s.strip("'"))),
+            (r"^\d+\.\d+$", lambda s: float(s.strip("'"))),
+            (r"^'.+'$", lambda s: s.strip("'")),
+            ("true|false", lambda s: True if s.lower() == "true" else False),
+            ("null", lambda s: None),
         ]
         self.func_map = func_map
         self.op_map = op_map
@@ -44,9 +42,8 @@ class FilterParser(QueryGenerator):
         operator_ = pp.Regex("|".join(self.op_map.keys())).setName("operator")
         number = pp.Regex(r"[\d\.]+")
         identifier = pp.Regex(r"[a-z][\w\.]*")
-        str_value = (
-                pp.QuotedString("'", unquoteResults=False, escChar="\\")
-                | pp.QuotedString('"', unquoteResults=False, escChar="\\")
+        str_value = pp.QuotedString("'", unquoteResults=False, escChar="\\") | pp.QuotedString(
+            '"', unquoteResults=False, escChar="\\"
         )
         date_value = pp.Regex(r"\d{4}-\d{1,2}-\d{1,2}")
         collection_value = pp.Suppress("[") + pp.delimitedList(identifier | str_value) + pp.Suppress("]")
@@ -69,9 +66,10 @@ class FilterParser(QueryGenerator):
 
     def parse_identifier(self, val: str | pp.ParseResults) -> Any:
         if isinstance(val, str):
-            return next((parser(val) for pattern, parser in \
-                         self.parsers if re.match(pattern, val)),
-                        None) or self.get_column(val)
+            for pattern, parser in self.parsers:
+                if re.match(pattern, val):
+                    return parser(val)
+            return self.get_column(val)
         if isinstance(val, Sequence):
             if len(val) == 1:
                 return self.parse_identifier(val[0])
